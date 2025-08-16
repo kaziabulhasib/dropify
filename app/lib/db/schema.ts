@@ -33,3 +33,28 @@ export const files=pgTable("files", {
   
 
 })
+
+/*
+parent: each file/folder can have a parent
+children: each folder can have many children
+
+
+*/ 
+
+
+export const  filesRelations=relations(files,({one,many})=> ({
+
+    parent:one(files,{
+        fields: [files.parentId],
+        references: [files.id],
+    }),
+    children:many(files),
+    
+    }))
+
+
+    // type definitions
+
+    export const File=typeof files.$inferSelect;
+    export const NewFile=typeof files.$inferInsert;
+
