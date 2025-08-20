@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useSignUp } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { z } from "zod";
-
-// hero ui
-
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
@@ -19,22 +19,24 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-
-// zod custom schema
-
 import { signUpSchema } from "@/schemas/signUpSchema";
-import React, { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 export default function SignUpForm() {
   const router = useRouter();
+  const { signUp, isLoaded, setActive } = useSignUp();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null
+  );
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -45,20 +47,9 @@ export default function SignUpForm() {
     },
   });
 
-  const [veryfying, setVeryfying] = useState(false);
-  const { signUp, isLoaded, setActive } = useSignUp();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [verificationError, setVerificationError] = useState<string | null>(
-    null
-  );
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
     if (!isLoaded) return;
+
     setIsSubmitting(true);
     setAuthError(null);
 
@@ -67,53 +58,55 @@ export default function SignUpForm() {
         emailAddress: data.email,
         password: data.password,
       });
-      await signUp.prepareEmailAddressVerification({
-        strategy: "email_code",
-      });
-      setVeryfying(true);
+
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setVerifying(true);
     } catch (error: any) {
-      console.error("signup error: ", error);
+      console.error("Sign-up error:", error);
       setAuthError(
         error.errors?.[0]?.message ||
-          "an error occurred during the signup.please try again "
+          "An error occurred during sign-up. Please try again."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
+
   const handleVerificationSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
-
     if (!isLoaded || !signUp) return;
+
     setIsSubmitting(true);
-    setAuthError(null);
+    setVerificationError(null);
 
     try {
       const result = await signUp.attemptEmailAddressVerification({
         code: verificationCode,
       });
-      console.log(result);
-      if ((result.status = "complete")) {
-        await setActive({ session: result.createdUserId });
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
         router.push("/dashboard");
       } else {
-        console.log("verification incomplete", result);
-        setVerificationError("Verification could not be completed!");
+        console.error("Verification incomplete:", result);
+        setVerificationError(
+          "Verification could not be completed. Please try again."
+        );
       }
     } catch (error: any) {
-      console.error("verification incomplete: ", error);
+      console.error("Verification error:", error);
       setVerificationError(
         error.errors?.[0]?.message ||
-          "an error occurred during the verification.please try again "
+          "An error occurred during verification. Please try again."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (veryfying) {
+  if (verifying) {
     return (
       <Card className='w-full max-w-md border border-default-200 bg-default-50 shadow-xl'>
         <CardHeader className='flex flex-col gap-1 items-center pb-2'>
@@ -121,7 +114,7 @@ export default function SignUpForm() {
             Verify Your Email
           </h1>
           <p className='text-default-500 text-center'>
-            We`&apos;`ve sent a verification code to your email
+            We've sent a verification code to your email
           </p>
         </CardHeader>
 
@@ -164,7 +157,7 @@ export default function SignUpForm() {
 
           <div className='mt-6 text-center'>
             <p className='text-sm text-default-500'>
-              Didn`&apos;`t receive a code?{" "}
+              Didn't receive a code?{" "}
               <button
                 onClick={async () => {
                   if (signUp) {
@@ -182,6 +175,7 @@ export default function SignUpForm() {
       </Card>
     );
   }
+
   return (
     <Card className='w-full max-w-md border border-default-200 bg-default-50 shadow-xl'>
       <CardHeader className='flex flex-col gap-1 items-center pb-2'>
