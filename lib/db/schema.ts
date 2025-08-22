@@ -17,7 +17,7 @@ export const files=pgTable("files", {
     // ownership info
 
     userId:text("user_id").notNull(),
-    parentId:text("parent_id"), // null for root
+    parentId:text("parent_id"), // parent folder   null for root item
 
     // file folder flag 
     isFolder:boolean("is_folder").notNull().default(false),
