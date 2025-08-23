@@ -5,6 +5,7 @@ import "./globals.css";
 // import "@heroui/theme/styles.css";
 
 import { ClerkProvider } from "@clerk/nextjs";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,7 @@ export default function RootLayout({
       <html lang='en'>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          {children}
+          <Providers>{children}</Providers>
         </body>
       </html>
     </ClerkProvider>
